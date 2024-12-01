@@ -62,7 +62,10 @@ namespace AppWideSystems.EmailSystem.Controller
                 
                 _emailClient.Send(mailMessage);
                 onEmailSent?.Invoke();
-                Debug.Log("Email Sent!");
+                foreach (var mail in mailMessage.To)
+                {
+                    Debug.Log($"Email Sent to {mail.Address} with subject: {mailMessage.Subject}");
+                }
             }
             catch (SmtpException ex)
             {

@@ -21,6 +21,7 @@ namespace AppWideSystems.SecretSantaSystem.Controller
     public class SecretSantaController : MonoBehaviourSingleton<SecretSantaController>, IAppWideSystem
     {
         [Header("Data")]
+        [SerializeField] private EmailTemplateData emailTemplateData;
         [SerializeField] private SecretSantaCandidatesData currentSecretSantaCandidates;
         [SerializeField] private SecretSantaResultData currentSecretSantaResultData;
 
@@ -90,7 +91,7 @@ namespace AppWideSystems.SecretSantaSystem.Controller
                 if (secretSantaResult.NotifiedUser) continue;
 
                 var emailSubject = secretSantaResult.GenerateEmailSubject();
-                var emailBody = secretSantaResult.GenerateHtmlEmailBody();
+                var emailBody = secretSantaResult.GenerateHtmlEmailBody(emailTemplateData);
 
                 var emailContent = new EmailContentData()
                 {
@@ -102,6 +103,12 @@ namespace AppWideSystems.SecretSantaSystem.Controller
 
                 EmailSystem.SendEmail(emailContent, () => { secretSantaResult.SetNotifiedUser(); });
             }
+            
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(currentSecretSantaResultData);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();       
+#endif
             
             OnNotifiedUsers?.Invoke(currentSecretSantaResultData);
         }
