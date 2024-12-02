@@ -39,26 +39,48 @@ namespace AppWideSystems.SecretSantaSystem.Controller
 
         public void GenerateDraw()
         {
-            if (currentSecretSantaCandidates == null) return;
-            if (currentSecretSantaResultData == null) return;
-            if (!currentSecretSantaCandidates.SecretSantaCandidatesList.Any()) return;
+            if (currentSecretSantaCandidates == null || currentSecretSantaResultData == null)
+                return;
 
-            var candidatesPoolList = currentSecretSantaCandidates.SecretSantaCandidatesList.ToList();
-            var resultsList = new List<SecretSantaResult>();
-
-            foreach (var secretSantaCandidate in currentSecretSantaCandidates.SecretSantaCandidatesList)
+            var candidates = currentSecretSantaCandidates.SecretSantaCandidatesList;
+            if (candidates == null || candidates.Count < 2)
             {
-                var drawnedUser = DrawUser(secretSantaCandidate, candidatesPoolList);
-                var secretSantaResult = new SecretSantaResult(secretSantaCandidate, drawnedUser);
+                Debug.LogError("Not enough candidates for a valid Secret Santa draw!");
+                return;
+            }
 
-                if (drawnedUser == null)
+            List<SecretSantaUserData> shuffledCandidates;
+            var maxRetries = 100;
+            bool validDraw;
+
+            do
+            {
+                shuffledCandidates = new List<SecretSantaUserData>(candidates);
+                shuffledCandidates.Shuffle();
+                validDraw = true;
+                
+                for (var i = 0; i < candidates.Count; i++)
                 {
-                    Debug.LogError($"User: {secretSantaCandidate.UserName} could not have a drawned participant. Please try again!");
-                    return;
+                    if (candidates[i].Id == shuffledCandidates[i].Id)
+                    {
+                        validDraw = false;
+                        Debug.LogWarning("Not a valid Secret Santa draw! Retrying...");
+                        break;
+                    }
                 }
 
-                resultsList.Add(secretSantaResult);
-                Debug.Log($"User: {secretSantaCandidate.UserName} Drawned: {drawnedUser.UserName}");
+                maxRetries--;
+                if (maxRetries <= 0)
+                {
+                    Debug.LogError("Failed to generate a valid Secret Santa draw after multiple retries.");
+                    return;
+                }
+            } while (!validDraw);
+
+            var resultsList = new List<SecretSantaResult>();
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                resultsList.Add(new SecretSantaResult(candidates[i], shuffledCandidates[i]));
             }
             
             currentSecretSantaResultData.SetResult(resultsList);
@@ -66,9 +88,10 @@ namespace AppWideSystems.SecretSantaSystem.Controller
 #if UNITY_EDITOR
             EditorUtility.SetDirty(currentSecretSantaResultData);
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();       
+            AssetDatabase.Refresh();
 #endif
-            
+
+            Debug.Log("Secret Santa draw generated successfully!");
             OnUsersDrawn?.Invoke(currentSecretSantaResultData);
         }
 
