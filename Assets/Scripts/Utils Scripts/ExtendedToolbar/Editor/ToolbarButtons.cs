@@ -1,56 +1,56 @@
+using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
-using UnityToolbarExtender;
+using UnityEditor.Toolbars;
 
 namespace Utils.EditorTools
 {
     public static class ToolbarButtons
     {
-        private const float ButtonWidth = 40f;
-        private const float ButtonHeight = 22f;
-        
-        private static GUIStyle _buttonStyle;
-        private static GUIStyle _gameplayButtonStyle;
-        
-        private static GUIContent _openProjectIcon;
-        private static GUIContent _mainSceneIcon;
-        
-        private static bool EditorPlaying => EditorApplication.isPlaying;
-        private static string PlayPauseButtonInfo => EditorPlaying ? "Stop" : "Play";
-        
-        private static GUIStyle ButtonStyle => _buttonStyle ??= new GUIStyle(EditorStyles.toolbarButton)
-        {
-            fixedWidth = ButtonWidth,
-            fixedHeight = ButtonHeight,
-            fontStyle = FontStyle.Bold,
-            alignment = TextAnchor.MiddleCenter
-        };
-        
-        private static GUIContent OpenProjectIcon => _openProjectIcon ??= new GUIContent("C#", "Open C# Project");
-        private static GUIContent PlayFromStartUpIcon => new(PlayPauseButtonInfo, "Play/Pause From StartUp");
-        private static GUIContent MainSceneIcon => _mainSceneIcon ??= new GUIContent("Main", "Open main scene");
+        private const string LeftToolbarPath = "DevTools/Navigate";
+        private const string OpenCSharpProjectMenuPath = "Assets/Open C# Project";
 
         [InitializeOnLoadMethod]
-        private static void Setup() => ToolbarExtender.LeftToolbarGUI.Add(OnLeftToolbarGUI);
-
-        private static void OnLeftToolbarGUI()
+        private static void RegisterPlayModeRefresh()
         {
-            GUILayout.FlexibleSpace();
-            
-            BuildButton(PlayFromStartUpIcon, ButtonStyle, EditorStartUp.PlayFromStartUpInfo);
-            BuildButton(OpenProjectIcon, ButtonStyle, "Assets/Open C# Project");
-            
-            GUILayout.Space(8f);
-            
-            BuildButton(MainSceneIcon, ButtonStyle, EditorStartUp.OpenMainSceneInfo);
-            
-            GUILayout.FlexibleSpace();
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
-        private static void BuildButton(GUIContent content, GUIStyle style, string info)
+        [MainToolbarElement(LeftToolbarPath, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 101)]
+        private static IEnumerable<MainToolbarElement> CreateLeftToolbar()
         {
-            if (GUILayout.Button(content, style))
-                EditorApplication.ExecuteMenuItem(info);
+            var playLabel = EditorApplication.isPlaying ? "Stop" : "Play";
+
+            yield return new MainToolbarButton(
+                new MainToolbarContent(playLabel, "Play/Pause From StartUp"),
+                PlayFromStartUp);
+
+            yield return new MainToolbarButton(
+                new MainToolbarContent("C#", "Open C# Project"),
+                OpenCSharpProject);
+
+            yield return new MainToolbarButton(
+                new MainToolbarContent("Main", "Open main scene"),
+                OpenMainScene);
+        }
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange _)
+        {
+            MainToolbar.Refresh(LeftToolbarPath);
+        }
+
+        private static void PlayFromStartUp()
+        {
+            EditorStartUp.PlayFromStartUp();
+        }
+
+        private static void OpenCSharpProject()
+        {
+            EditorApplication.ExecuteMenuItem(OpenCSharpProjectMenuPath);
+        }
+
+        private static void OpenMainScene()
+        {
+            EditorStartUp.OpenMainScene();
         }
     }
 }

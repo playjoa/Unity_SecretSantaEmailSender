@@ -1,5 +1,4 @@
-﻿using System.Text;
-using AppWideSystems.SecretSantaSystem.Data;
+﻿using AppWideSystems.SecretSantaSystem.Data;
 
 namespace AppWideSystems.SecretSantaSystem.Util
 {
@@ -14,9 +13,33 @@ namespace AppWideSystems.SecretSantaSystem.Util
         public const string HTML_SECRETSANTA_EMAIL_KEY = "{SecretSantaEmail}";
         public const string HTML_SECRETSANTA_PHONENUMBER_KEY = "{SecretSantaPhone}";
         
+        public static string GenerateEmailSubject(string recipientName)
+        {
+            return $"Your Secret Santa draw - {recipientName}";
+        }
+
         public static string GenerateEmailSubject(this SecretSantaResult secretSantaResult)
         {
-            return $"Sorteio do Amigo Secreto da Família Castro Natal 2023 - {secretSantaResult.User.UserName}";
+            return GenerateEmailSubject(secretSantaResult.User.UserName);
+        }
+
+        public static string FillEmailHtmlTemplate(string htmlTemplate, string userName, string secretSantaName, string secretSantaEmail, string secretSantaPhone)
+        {
+            if (string.IsNullOrEmpty(htmlTemplate))
+            {
+                return string.Empty;
+            }
+
+            userName ??= string.Empty;
+            secretSantaName ??= string.Empty;
+            secretSantaEmail ??= string.Empty;
+            secretSantaPhone ??= string.Empty;
+
+            return htmlTemplate
+                .Replace(HTML_USERNAME_KEY, userName)
+                .Replace(HTML_SECRETSANTA_USERNAME_KEY, secretSantaName)
+                .Replace(HTML_SECRETSANTA_EMAIL_KEY, secretSantaEmail)
+                .Replace(HTML_SECRETSANTA_PHONENUMBER_KEY, secretSantaPhone);
         }
 
         public static string GenerateHtmlEmailBody(this SecretSantaResult secretSantaResult, EmailTemplateData emailTemplateData)
@@ -26,14 +49,12 @@ namespace AppWideSystems.SecretSantaSystem.Util
                 return string.Empty;
             }
 
-            var emailBody = emailTemplateData.EmailHtmlTemplate.text;
-
-            emailBody = emailBody.Replace(HTML_USERNAME_KEY, secretSantaResult.User.UserName);
-            emailBody = emailBody.Replace(HTML_SECRETSANTA_USERNAME_KEY, secretSantaResult.DrawnedUser.UserName);
-            emailBody = emailBody.Replace(HTML_SECRETSANTA_EMAIL_KEY, secretSantaResult.DrawnedUser.UserEmail);
-            emailBody = emailBody.Replace(HTML_SECRETSANTA_PHONENUMBER_KEY, secretSantaResult.DrawnedUser.UserPhoneNumber);
-
-            return emailBody;
+            return FillEmailHtmlTemplate(
+                emailTemplateData.EmailHtmlTemplate.text,
+                secretSantaResult.User.UserName,
+                secretSantaResult.DrawnedUser.UserName,
+                secretSantaResult.DrawnedUser.UserEmail,
+                secretSantaResult.DrawnedUser.UserPhoneNumber);
         }
     }
 }
